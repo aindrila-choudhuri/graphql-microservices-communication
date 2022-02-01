@@ -40,7 +40,7 @@ function awaitRequest(userID, query, uri) {
         JSON: true,
       },
       function (error, response, body) {
-        if (!error && response.statusCode == 200) {
+        if (!error && response.statusCode === 200) {
           const postData = JSON.parse(body);
           resolve(postData?.data?.getPostsByUserId ? postData.data.getPostsByUserId : []);
         } else {
@@ -61,7 +61,8 @@ const getPostsByUserId = async (userID) => {
     }
   }
 `;
-  const uri = `http://localhost:3002/graphql`;
+  const uri = `http://192.168.1.74:8002/graphql`;
+
   const res = await awaitRequest(userID, query, uri);
   return res;
 };
@@ -76,5 +77,23 @@ export const GET_USER_WITH_POSTS = {
     const userObj = UserObj.find((user) => user.id === userID);
     const postData = await getPostsByUserId(userID);
     return { ...userObj, posts: postData };
+  },
+};
+
+async function getAllPostsForAllUsers(users) {
+  await Promise.all(
+    UserObj.map(async (user) => {
+      const postData = await getPostsByUserId(user.id);
+      users.push({ ...user, posts: postData });
+    })
+  );
+}
+
+export const GET_ALL_USERS_WITH_POSTS = {
+  type: new GraphQLList(UserWithPostType),
+  async resolve() {
+    const users = [];
+    await getAllPostsForAllUsers(users);
+    return users;
   },
 };
